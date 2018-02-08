@@ -22,19 +22,26 @@ Copyright (c) 2018 Alexander Stark alexander.stark@uni-ulm.de
 
 import os
 import psutil
+import stat
 from sys import platform
 
 
 def get_fd_max():
+    """ Retrieve the maximal available file descriptors depending on the OS.
+
+    Returns
+    -------
+    int
+        the maximal number of file descriptors
+    """
 
     if platform == 'win32':
         import win32file
         fd_max = win32file._getmaxstdio() # kind of the soft limit
         # hard limit is not specified but very often 4*softlimit
 
-    else: # all other possibilites ('linux', 'cygwin', 'darwin') 
-          # should support this:
-
+    # all other possibilites ('linux', 'cygwin', 'darwin') should support this:
+    else: 
         import resource
         # the soft limit imposed by the current configuration
         # the hard limit imposed by the operating system.
@@ -45,11 +52,27 @@ def get_fd_max():
 
 
 def get_raw_fd():
-    """ Return a popenfile object, which is actually a list of opened
+    """ Try to get all opened file descriptors via psutil.
     
-    @return list( (path, fd_number), ... ) with the entries
-        str path: the path of the opened file
-        int fd_number: the file descriptor index associated with it.
+    Returns
+    -------
+    list
+        a list of popenfile objects, which is an instance of tuple. Each entry
+        of this list should at least have the attributes
+        path: str
+            the path of the opened file
+        fd: int 
+            the file descriptor index associated with it.
+
+    Depending on the OS, the information about file descriptors can be rich 
+    (=> on Unix systems) or very sparse or even not complete (=> Windows).
+
+    In general the popenfile is a tuple, and at least the attributes 'path' and
+    'fd' are present. Ideally, the 'fd' will identify the opened files and 
+    'path' is describing their path-location in the system.
+    However, in Windows an 'fd=-1' might be very common, therefore the correct
+    file descriptor 'fd' belonging to the opened file in 'path' cannot be 
+    obtained by this method.
     """
     
     proc = psutil.Process(os.getpid())
@@ -57,7 +80,8 @@ def get_raw_fd():
 
 
 def get_available_fd(fd_max=512):
-    
+    """
+    """
     fd_list = []
     for i in range(fd_max):
         try:
