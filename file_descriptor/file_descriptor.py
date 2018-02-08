@@ -202,8 +202,19 @@ _fd_types = (
 )
 
 def fd_mode_status():
+    """ Identify the opened file descriptors by their mode types.
+
+    Returns
+    -------  
+    list:
+        with tuples(fd, fd_type) as entries with the meaning
+        fd: int
+            the file descriptor
+        fd_type: str
+            the file descriptor mode type, which is associated to the current
+            file descriptor.
+    """
     result = []
-    
     fd_max = get_fd_max()
     
     for fd in range(fd_max):
@@ -211,10 +222,16 @@ def fd_mode_status():
             s = os.fstat(fd)
         except:
             continue
+
+        # simply check by utilizing the fd_type checking methods
         for fd_type, func in _fd_types:
             if func(s.st_mode):
                 break
+
+        # fd_mode was found then save at least the mode number
         else:
             fd_type = str(s.st_mode)
+
         result.append((fd, fd_type))
+
     return result
