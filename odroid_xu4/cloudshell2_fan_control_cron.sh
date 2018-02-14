@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Script to adjust fan speed according to 
+# Script to switch fan on or off according to CPU and disk temperature.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
