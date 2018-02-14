@@ -2,6 +2,8 @@
 #
 # Script to adjust fan speed according to temperature
 
+# needs root privileges, since fdisk and smartctl needs root access to read out disk information
+
 REFRESH="5"	                # refresh rate in seconds
 DISK_TEMP_THRESHOLD="35"    # disk temperature threshold in degree 
 DISK_TEMP_INTERVAL="5"	  	# temperature interval where nothing is done
@@ -11,9 +13,8 @@ FAN_CHANGED="*"
 
 get_disk_dev_info() {
     # Pull disk info from /dev/sd*
-    fdisk -l > disks.txt 2>/dev/null
-    SATA=($(awk '/^\/dev\/sd/ {printf "%s ", $1}' disks.txt))
-    rm disks.txt
+    #fdisk -l > disks.txt 2>/dev/null # send all errors which are comming on stderr into never never land :D 
+    SATA=( $(fdisk -l | grep -o '/dev/sd[a-z]')) 
 }
 
 get_disk_temperature() {
@@ -23,10 +24,15 @@ get_disk_temperature() {
         DISK_TEMP[$i]=" (IDLE)"
         local t
         t=$(smartctl -a "${SATA[$i]}" -d sat | grep "Temp")
+
         if (( $? == 0 ))
         then
-            local temp=$(echo $t | awk '{print $10}')
-            DISK_TEMP[$i]="$temp"
+
+            # split the line obtained from smartctl by blank-character
+            # and replace blank by new line, each new line is converted to
+            # an indexed array.
+            local temp=( $(echo $t | tr " " "\n")) 
+            DISK_TEMP[$i]="${temp[-1]}"     # the last entry is the temperature
         else
             DISK_TEMP[$i]=""
         fi
@@ -80,9 +86,9 @@ handle_fan() {
 
         if [ "${FAN_CHANGED}" != "1" ]
         then
-            cpu_curr_threshold="${CPU_TEMP_THRESHOLD}"+"${CPU_TEMP_INTERVAL}"
+            cpu_curr_threshold=$((CPU_TEMP_THRESHOLD+CPU_TEMP_INTERVAL))
         else
-            cpu_curr_threshold="${CPU_TEMP_THRESHOLD}"
+            cpu_curr_threshold=$((CPU_TEMP_THRESHOLD))
         fi
 
 
@@ -91,7 +97,7 @@ handle_fan() {
             if [ "${FAN_CHANGED}" != "1" ]
             then
                 echo "Turning fan on because CPU $i has hit the threshold $cpu_curr_threshold degree."
-                echo "CPU $i has current temperature of $CPU_TEMP[$i] degree."
+                echo "CPU $i has current temperature of ${CPU_TEMP[$i]} degree."
             fi
 
             FAN_CHANGED="1"
@@ -103,10 +109,23 @@ handle_fan() {
     # No fuss, fan is off
     if [ "${FAN_CHANGED}" != "0" ]
     then
-        echo "All temps nominal, turning fan off"
+        echo "All temps nominal, turning fan off."
+        print_temp
         FAN_CHANGED="0"
     fi
     fan_off
+}
+
+print_temp(){
+    for i in "${!CPU_TEMP[@]}"
+    do
+        echo "CPU $i has current temperature of ${CPU_TEMP[$i]} degree."
+    done
+
+    for i in "${!DISK_TEMP[@]}"
+    do
+        echo "Disk $i has current temperature of ${DISK_TEMP[$i]} degree."
+    done
 }
 
 while true; do
