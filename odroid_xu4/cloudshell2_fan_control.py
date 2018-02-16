@@ -63,18 +63,16 @@ def get_disk_temperature():
     hdd_list = ['sda', 'sdb']
     for hdd in hdd_list:
 
-        output = float(subprocess.Popen(['smartctl -a /dev/{0} -d sat'.format(hdd)], 
-                                        shell=True, stdout=subprocess.PIPE))
+        output = subprocess.Popen(['smartctl -a /dev/{0} -d sat'.format(hdd)], 
+                                  shell=True, stdout=subprocess.PIPE)
 
-        output = output.stdout.read().decode('utf-8').split('/n')
+        output = output.stdout.read().decode('utf-8').split('\n')
 
         for line in output:
-            if 'Temperature' in  line:
+            if 'Temperature' in line:
                 temp = float(line.split()[-1])
                 hdd_temp.append(temp)
                 break   # assume just one temperature info
-
-        hdd_temp.append(a)
 
     return [(hdd_list[i], hdd_temp[i]) for i in range(len(hdd_list))]
 

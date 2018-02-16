@@ -50,7 +50,7 @@
 #        save this file. This start this script when the system is rebooted.
 
 
-REFRESH="5"	                # refresh rate in seconds, how often it is checked.
+REFRESH="20"	            # refresh rate in seconds, how often it is checked.
 DISK_TEMP_THRESHOLD="35"    # disk temperature threshold in degree 
 DISK_TEMP_INTERVAL="5"	  	# temperature interval where nothing is done
 CPU_TEMP_THRESHOLD="40"     # cpu temperature threshold in degree
