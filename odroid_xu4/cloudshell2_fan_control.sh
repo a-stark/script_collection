@@ -36,7 +36,18 @@
 #
 # Note: script needs root privileges, since 'fdisk' and 'smartctl' require root 
 #       access to read out disk information.
-
+# Note2: this script can be run in cronjob upon start of the system. To set it 
+#        up do the following:
+#        Open the crontabs as root:
+#
+#           sudo crontab -e           
+#
+#        at the very bottom of this file, add the following lines
+#
+#           PATH=/opt/someApp/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#           @reboot bash <path-to-this-script>
+#
+#        save this file. This start this script when the system is rebooted.
 
 
 REFRESH="5"	                # refresh rate in seconds, how often it is checked.
