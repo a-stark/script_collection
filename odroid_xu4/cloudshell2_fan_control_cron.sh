@@ -26,27 +26,35 @@
 # ============================
 #
 # Reads out the current temperature of CPU and DISKS and if a 
-# THRESHOLD+INTERVAL value is exceeded the cloudshell fan is switched on. If 
-# the temperature falls below THRESHOLD the fan is switched of. By using the
-# variable INTERVAL it is prevented that the fan is not switched constantly on
-# and off at the THRESHOLD. Therefore, 
-#   - fan is switched ON at THRESHOLD + INTERVAL
-#   - fan is switched OFF at THRESHOLD
-# INTERVAL acts therefore as a buffer. 
+# THRESHOLD value is exceeded the cloudshell fan is switched on. If 
+# the temperature falls below THRESHOLD the fan is switched off. 
 #
 # Note: script needs root privileges, since 'fdisk' and 'smartctl' require root 
 #       access to read out disk information.
-# Note2: this script can be used for cron jobs.
 #
+# Note2: this script can be used for cron jobs. Make sure to run this script as
+#        cronjob from root. To set it up do the following:
+#        Open the crontabs as root:
+#
+#           sudo crontab -e           
+#
+#        at the very bottom of this file, add the following lines
+#
+#           PATH=/opt/someApp/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#           * * * * * bash <path-to-this-script>
+#
+#        save this file. As cronjobs run at minimum every minute, another line
+#        can be added to the crontabs like
+#
+#           * * * * *  sleep 30; bash <path-to-this-script>
+#
+#        which executes the same bash script after 30 seconds. This will enable
+#        a check interval of 30s. By adding more scripts in the same manner the
+#        a smaller execution interval then 1 minute can be achieved.
 
 
-
-REFRESH="5"	                # refresh rate in seconds, how often it is checked.
 DISK_TEMP_THRESHOLD="35"    # disk temperature threshold in degree 
-DISK_TEMP_INTERVAL="5"	  	# temperature interval where nothing is done
 CPU_TEMP_THRESHOLD="40"     # cpu temperature threshold in degree
-CPU_TEMP_INTERVAL="20"      # cpu interval where nothing is done
-FAN_CHANGED="*"
 
 get_disk_dev_info() {
     # Pull disk info from /dev/sd* and save it into the array SATA
@@ -104,67 +112,6 @@ fan_off() {
     i2cset -y 1 0x60 0x05 0x05
 }
 
-handle_fan() {
-    for i in "${!DISK_TEMP[@]}"
-    do
-
-        if [ "${FAN_CHANGED}" != "1" ]
-        then
-            disk_curr_threshold=$((DISK_TEMP_THRESHOLD+DISK_TEMP_INTERVAL))
-        else
-            disk_curr_threshold=$((DISK_TEMP_THRESHOLD))
-        fi
-
-
-        if (( "${DISK_TEMP[$i]}" > "${disk_curr_threshold}" ))
-        then
-            if [ "${FAN_CHANGED}" != "1" ]
-            then
-                echo "Turning fan on because disk $i has hit the threshold ${disk_curr_threshold}."
-                echo "Disk $i has current temperature of ${DISK_TEMP[$i]} degree."
-            fi
-
-            FAN_CHANGED="1"
-            fan_on
-            return
-        fi
-    done
-
-    for i in "${!CPU_TEMP[@]}"
-    do
-
-        if [ "${FAN_CHANGED}" != "1" ]
-        then
-            cpu_curr_threshold=$((CPU_TEMP_THRESHOLD+CPU_TEMP_INTERVAL))
-        else
-            cpu_curr_threshold=$((CPU_TEMP_THRESHOLD))
-        fi
-
-
-        if (( "${CPU_TEMP[$i]}" > "${cpu_curr_threshold}" ))
-        then
-            if [ "${FAN_CHANGED}" != "1" ]
-            then
-                echo "Turning fan on because CPU $i has hit the threshold $cpu_curr_threshold degree."
-                echo "CPU $i has current temperature of ${CPU_TEMP[$i]} degree."
-            fi
-
-            FAN_CHANGED="1"
-            fan_on
-            return
-        fi
-    done
-
-    # No fuss, fan is off
-    if [ "${FAN_CHANGED}" != "0" ]
-    then
-        echo "All temps nominal, turning fan off."
-        print_temp 
-        FAN_CHANGED="0"
-    fi
-    fan_off
-}
-
 print_temp(){
     # print all temperature variables from CPU and disk
     for i in "${!CPU_TEMP[@]}"
@@ -178,6 +125,44 @@ print_temp(){
     done
 }
 
+handle_fan() {
+    for i in "${!DISK_TEMP[@]}"
+    do
+
+        if (( "${DISK_TEMP[$i]}" > "${DISK_TEMP_THRESHOLD}" ))
+        then
+
+            echo "Turning fan on because disk $i has hit the threshold ${DISK_TEMP_THRESHOLD}."
+            echo "Disk $i has current temperature of ${DISK_TEMP[$i]} degree."
+
+            fan_on
+            return
+        fi
+    done
+
+    for i in "${!CPU_TEMP[@]}"
+    do
+
+
+        if (( "${CPU_TEMP[$i]}" > "${CPU_TEMP_THRESHOLD}" ))
+        then
+
+            echo "Turning fan on because CPU $i has hit the threshold $CPU_TEMP_THRESHOLD degree."
+            echo "CPU $i has current temperature of ${CPU_TEMP[$i]} degree."
+
+            fan_on
+            return
+        fi
+    done
+
+    # Turn eventually the fan off, if the function has not returned yet.
+
+    echo "All temps nominal, turning fan off."
+    print_temp 
+    FAN_CHANGED="0"
+
+    fan_off
+}
 
 get_disk_dev_info
 get_disk_temperature
