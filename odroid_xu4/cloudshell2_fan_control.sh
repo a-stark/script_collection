@@ -51,10 +51,10 @@
 
 
 REFRESH="20"	            # refresh rate in seconds, how often it is checked.
-DISK_TEMP_THRESHOLD="35"    # disk temperature threshold in degree 
-DISK_TEMP_INTERVAL="5"	  	# temperature interval where nothing is done
-CPU_TEMP_THRESHOLD="40"     # cpu temperature threshold in degree
-CPU_TEMP_INTERVAL="20"      # cpu interval where nothing is done
+DISK_TEMP_THRESHOLD="40"    # disk temperature threshold in degree, default 35
+DISK_TEMP_INTERVAL="5"	  	# temperature interval where nothing is done, default 5
+CPU_TEMP_THRESHOLD="40"     # cpu temperature threshold in degree, default 40
+CPU_TEMP_INTERVAL="20"      # cpu interval where nothing is done, default 20
 FAN_CHANGED="*"
 
 get_disk_dev_info() {
