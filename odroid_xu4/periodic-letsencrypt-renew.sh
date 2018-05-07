@@ -21,7 +21,7 @@
 
 echo "=========================================="
 echo ""
-echo "Starting letencrypt renewval:"
+echo "Starting letencrypt renewal:"
 
 echo $(date +"%Y-%m-%d on %A at %Hh%Mm%Ss.")
 echo ""
@@ -29,6 +29,6 @@ echo ""
 /usr/bin/certbot renew --renew-hook "service nginx reload"
 
 echo ""
-echo "Renewval finalized."
+echo "Renewal finalized."
 echo ""
 
